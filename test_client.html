@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Agent Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+        #status { padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .connecting { background: #fff3cd; color: #856404; }
+        #log { background: #f5f5f5; padding: 15px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🎙️ Voice Agent Test</h1>
+
+    <div id="status" class="disconnected">Disconnected</div>
+
+    <button id="connectBtn" onclick="connect()">Connect & Talk</button>
+    <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+
+    <h3>Log:</h3>
+    <div id="log"></div>
+
+    <script>
+        const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVGVzdCBVc2VyIiwidmlkZW8iOnsicm9vbUpvaW4iOnRydWUsInJvb20iOiJ0ZXN0LXJvb20iLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoidGVzdC11c2VyIiwiaXNzIjoiZGV2a2V5IiwibmJmIjoxNzY1Nzg5MjYzLCJleHAiOjE3NjU4MTA4NjN9.J-ALuAhrrQuUuEpHSpDpo34hTw5BE946Xx4ES8hyc0w";
+        const LIVEKIT_URL = "ws://localhost:7880";
+
+        let room = null;
+
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function setStatus(status, className) {
+            const el = document.getElementById('status');
+            el.textContent = status;
+            el.className = className;
+        }
+
+        async function connect() {
+            try {
+                setStatus('Connecting...', 'connecting');
+                log('Connecting to LiveKit...');
+
+                room = new LivekitClient.Room();
+
+                room.on('participantConnected', (p) => log(`Participant joined: ${p.identity}`));
+                room.on('participantDisconnected', (p) => log(`Participant left: ${p.identity}`));
+                room.on('trackSubscribed', (track, pub, participant) => {
+                    log(`Track subscribed: ${track.kind} from ${participant.identity}`);
+                    if (track.kind === 'audio') {
+                        const el = track.attach();
+                        document.body.appendChild(el);
+                    }
+                });
+
+                await room.connect(LIVEKIT_URL, TOKEN);
+                log('Connected to room: ' + room.name);
+
+                // Enable microphone
+                await room.localParticipant.setMicrophoneEnabled(true);
+                log('Microphone enabled - start talking!');
+
+                setStatus('Connected - Speak now!', 'connected');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+
+            } catch (e) {
+                log('Error: ' + e.message);
+                setStatus('Connection failed', 'disconnected');
+            }
+        }
+
+        async function disconnect() {
+            if (room) {
+                await room.disconnect();
+                room = null;
+            }
+            setStatus('Disconnected', 'disconnected');
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+            log('Disconnected');
+        }
+    </script>
+</body>
+</html>
