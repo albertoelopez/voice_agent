@@ -22,7 +22,7 @@ from livekit.agents import (
     Agent,
     AgentSession,
 )
-from livekit.plugins import groq, silero, cartesia
+from livekit.plugins import groq, silero
 
 # Configure detailed logging
 logging.basicConfig(
@@ -93,8 +93,8 @@ async def entrypoint(ctx: JobContext):
     llm = groq.LLM(model="llama-3.3-70b-versatile")
     logger.info("LLM created")
 
-    logger.info("Creating TTS (Cartesia)...")
-    tts = cartesia.TTS()
+    logger.info("Creating TTS (Groq)...")
+    tts = groq.TTS()
     logger.info("TTS created")
 
     # Create the agent with instructions and components

@@ -4,37 +4,139 @@
     <title>Voice Agent Test</title>
     <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
         button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
         #status { padding: 20px; margin: 20px 0; border-radius: 8px; }
         .connected { background: #d4edda; color: #155724; }
         .disconnected { background: #f8d7da; color: #721c24; }
         .connecting { background: #fff3cd; color: #856404; }
-        #log { background: #f5f5f5; padding: 15px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+
+        #conversation {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        .agent-message {
+            background: #e9ecef;
+            color: #333;
+            margin-right: auto;
+        }
+        .message-label {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+        .message-text {
+            font-size: 16px;
+        }
+        .message-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .user-container {
+            align-items: flex-end;
+        }
+        .agent-container {
+            align-items: flex-start;
+        }
+
+        #log {
+            background: #f5f5f5;
+            padding: 15px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            border-radius: 8px;
+        }
+
+        .panels {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
-    <h1>🎙️ Voice Agent Test</h1>
+    <h1>Voice Agent Test</h1>
 
     <div id="status" class="disconnected">Disconnected</div>
 
     <button id="connectBtn" onclick="connect()">Connect & Talk</button>
     <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
 
-    <h3>Log:</h3>
-    <div id="log"></div>
+    <h3>Conversation:</h3>
+    <div id="conversation">
+        <div style="color: #999; text-align: center; padding: 40px;">
+            Click "Connect & Talk" and start speaking...
+        </div>
+    </div>
+
+    <details>
+        <summary>Debug Log</summary>
+        <div id="log"></div>
+    </details>
 
     <script>
-        const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVGVzdCBVc2VyIiwidmlkZW8iOnsicm9vbUpvaW4iOnRydWUsInJvb20iOiJ0ZXN0LXJvb20iLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoidGVzdC11c2VyIiwiaXNzIjoiZGV2a2V5IiwibmJmIjoxNzY1Nzg5MjYzLCJleHAiOjE3NjU4MTA4NjN9.J-ALuAhrrQuUuEpHSpDpo34hTw5BE946Xx4ES8hyc0w";
+        const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVGVzdCBVc2VyIiwidmlkZW8iOnsicm9vbUpvaW4iOnRydWUsInJvb20iOiJ0ZXN0LXJvb20iLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoidGVzdC11c2VyIiwiaXNzIjoiZGV2a2V5IiwibmJmIjoxNzY2MzAwOTkxLCJleHAiOjE3NjYzMjI1OTF9.fwKbAwHgcQQi5uYGkxwQHwUKeqqSR8Yl7nz3-bBeVro";
         const LIVEKIT_URL = "ws://localhost:7880";
 
         let room = null;
+        let conversationStarted = false;
 
         function log(msg) {
             const logEl = document.getElementById('log');
             const time = new Date().toLocaleTimeString();
             logEl.innerHTML += `[${time}] ${msg}\n`;
             logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function addMessage(text, isUser) {
+            const convEl = document.getElementById('conversation');
+
+            if (!conversationStarted) {
+                convEl.innerHTML = '';
+                conversationStarted = true;
+            }
+
+            const containerDiv = document.createElement('div');
+            containerDiv.className = `message-container ${isUser ? 'user-container' : 'agent-container'}`;
+
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'message-label';
+            labelDiv.textContent = isUser ? 'You' : 'Agent';
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isUser ? 'user-message' : 'agent-message'}`;
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = text;
+
+            msgDiv.appendChild(textDiv);
+            containerDiv.appendChild(labelDiv);
+            containerDiv.appendChild(msgDiv);
+            convEl.appendChild(containerDiv);
+            convEl.scrollTop = convEl.scrollHeight;
         }
 
         function setStatus(status, className) {
@@ -50,8 +152,15 @@
 
                 room = new LivekitClient.Room();
 
-                room.on('participantConnected', (p) => log(`Participant joined: ${p.identity}`));
+                room.on('participantConnected', (p) => {
+                    log(`Participant joined: ${p.identity}`);
+                    if (p.identity.startsWith('agent')) {
+                        addMessage('Agent connected. How can I help you?', false);
+                    }
+                });
+
                 room.on('participantDisconnected', (p) => log(`Participant left: ${p.identity}`));
+
                 room.on('trackSubscribed', (track, pub, participant) => {
                     log(`Track subscribed: ${track.kind} from ${participant.identity}`);
                     if (track.kind === 'audio') {
@@ -60,10 +169,40 @@
                     }
                 });
 
+                room.on('dataReceived', (payload, participant) => {
+                    try {
+                        const decoder = new TextDecoder();
+                        const jsonStr = decoder.decode(payload);
+                        const data = JSON.parse(jsonStr);
+                        log(`Data received: ${jsonStr}`);
+
+                        if (data.type === 'transcription' || data.transcript) {
+                            const text = data.transcript || data.text || data.content;
+                            const isUser = data.participant_identity === 'test-user' ||
+                                          data.is_user ||
+                                          (participant && participant.identity === 'test-user');
+                            if (text && text.trim()) {
+                                addMessage(text, isUser);
+                            }
+                        }
+                    } catch (e) {
+                        log(`Data parse error: ${e.message}`);
+                    }
+                });
+
+                room.on('transcriptionReceived', (segments, participant) => {
+                    log(`Transcription received from ${participant?.identity}`);
+                    segments.forEach(segment => {
+                        if (segment.final && segment.text && segment.text.trim()) {
+                            const isUser = participant?.identity === 'test-user';
+                            addMessage(segment.text, isUser);
+                        }
+                    });
+                });
+
                 await room.connect(LIVEKIT_URL, TOKEN);
                 log('Connected to room: ' + room.name);
 
-                // Enable microphone
                 await room.localParticipant.setMicrophoneEnabled(true);
                 log('Microphone enabled - start talking!');
 
@@ -86,6 +225,7 @@
             document.getElementById('connectBtn').disabled = false;
             document.getElementById('disconnectBtn').disabled = true;
             log('Disconnected');
+            conversationStarted = false;
         }
     </script>
 </body>
