@@ -71,8 +71,8 @@ voice_agent/
 │   └── agents/
 │       └── inquiry_agent.py    # Main voice agent
 ├── tests/
-│   ├── test_api_direct.py      # Direct API tests
-│   └── test_components.py      # Component tests
+│   ├── test_unit.py            # Unit tests (env, SDK, modules)
+│   └── test_e2e.py             # E2E Playwright tests
 ├── test_client.html            # Browser test client
 ├── requirements.txt
 └── .env                        # Environment variables
@@ -101,11 +101,15 @@ tts = deepgram.TTS()  # Requires DEEPGRAM_API_KEY
 ## Testing
 
 ```bash
-# Run component tests
-pytest tests/test_components.py -v
+# Run unit tests
+pytest tests/test_unit.py -v
 
-# Run direct API tests
-python tests/test_api_direct.py
+# Run E2E tests (requires HTTP server on port 8080)
+python -m http.server 8080 &
+pytest tests/test_e2e.py -v
+
+# Run all tests
+pytest tests/test_unit.py tests/test_e2e.py -v
 ```
 
 ## Latency Targets
